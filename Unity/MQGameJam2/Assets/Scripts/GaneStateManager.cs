@@ -13,6 +13,8 @@ public struct GameStateCamera
 
 public class GaneStateManager : MonoBehaviour
 {
+    public static GaneStateManager instance;
+
     [SerializeField] private Camera cam;
 
     [SerializeField] private float cameraMoveSpeed = 3;
@@ -24,6 +26,10 @@ public class GaneStateManager : MonoBehaviour
 
     private void Start()
     {
+        if (instance == null)
+        {
+            instance = this;
+        }
         SetGameState(GameState.KEYBOARD);
     }
 
@@ -40,11 +46,17 @@ public class GaneStateManager : MonoBehaviour
 
         for (int i = 0; i < cameraStates.Length; i++)
         {
-
             if (cameraStates[i].state == newState)
             {
                 currentCameraState = cameraStates[i];
             }
+        }
+
+        switch (gameState)
+        {
+            case GameState.KEYBOARD:
+                KeyboardManager.instance.SetState(KeyboardState.EXPLODE);
+                break;
         }
     }
 }
