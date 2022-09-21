@@ -15,6 +15,10 @@ public class QTEManager : MonoBehaviour
     [SerializeField] private float timePerLetter = 1f;
     [SerializeField] private TextAsset textContent;
 
+
+    [SerializeField] private GameObject minigameScreen;
+    [SerializeField] private GameObject completedScreen;
+
     private QTEState currentState = QTEState.NONE;
 
     private string[] possibleTexts;
@@ -23,7 +27,11 @@ public class QTEManager : MonoBehaviour
     private int currIndex;
     private float currentTime;
 
+    private int correct;
+
     private float wrongTimer;
+
+    private float timer;
 
     // Start is called before the first frame update
     void Start()
@@ -33,6 +41,8 @@ public class QTEManager : MonoBehaviour
             instance = this;
         }
         possibleTexts = textContent.text.Split("\n");
+        minigameScreen.SetActive(false);
+        completedScreen.SetActive(false);
     }
 
     // Update is called once per frame
@@ -41,17 +51,38 @@ public class QTEManager : MonoBehaviour
         switch (currentState)
         {
             case QTEState.GENERATING:
+                minigameScreen.SetActive(true);
                 currText = possibleTexts[Random.Range(0, possibleTexts.Length)];
                 timerSlider.value = 1;
                 currentTime = timePerLetter;
                 currIndex = 0;
                 letterText.text = currText[currIndex].ToString().ToUpper();
 
+                timer = Time.time;
                 SetState(QTEState.RUNNING);
                 break;
 
             case QTEState.RUNNING:
                 currentTime -= Time.deltaTime;
+
+                string inStr = Input.inputString;
+                if (inStr.Length > 0 && inStr[0] == currText[currIndex])
+                {
+                    correct++;
+
+                    currIndex++;
+
+                    if (currIndex >= currText.Length - 1)
+                    {
+
+                        Debug.Log("DONE");
+                        Completed();
+                        break;
+                    }
+
+                    letterText.text = currText[currIndex].ToString().ToUpper();
+                    currentTime = timePerLetter;
+                }
 
                 if (currentTime <= 0)
                 {
@@ -59,26 +90,14 @@ public class QTEManager : MonoBehaviour
                     wrongTimer = 0;
                     letterText.color = Color.red;
 
+                    correct--;
+                    correct = correct < 0 ? 0 : correct;
+
                     SetState(QTEState.WRONG);
                 }
 
-                if (currIndex >= currText.Length)
-                {
-                    //completed
-                    Debug.Log("Yes");
-                    SetState(QTEState.COMPLETE);
-                }
-
-                string inStr = Input.inputString;
-                if(inStr.Length > 0 && inStr[0] == currText[currIndex])
-                {
-                    currIndex++;
-                    letterText.text = currText[currIndex].ToString().ToUpper();
-                    currentTime = timePerLetter;
-                }
 
                 timerSlider.value = currentTime / timePerLetter;
-                ///check input for that key
                 break;
             case QTEState.WRONG:
                 wrongTimer += Time.deltaTime;
@@ -86,6 +105,10 @@ public class QTEManager : MonoBehaviour
                 if(wrongTimer > 1)
                 {
                     currIndex++;
+                    if(currIndex >= currText.Length) {
+                        Completed();
+                        break;
+                    }
                     letterText.text = currText[currIndex].ToString().ToUpper();
                     currentTime = timePerLetter;
 
@@ -97,6 +120,18 @@ public class QTEManager : MonoBehaviour
         }
 
     }
+    void Completed()
+    {
+        //completed
+        minigameScreen.SetActive(false);
+        completedScreen.SetActive(true);
+
+        GameStateManager.instance.MonitorStats(correct / (float)(currText.Length - 1) * 100, Time.time - timer);
+        GameStateManager.instance.SetGameState(GameState.GAMEOVER);
+
+        SetState(QTEState.COMPLETE);
+    }
+
     public void SetState(QTEState newState)
     {
         currentState = newState;

@@ -41,6 +41,8 @@ public class KeyboardManager : MonoBehaviour
     private int brokenKeys;
     private int correctPlacements;
 
+    private float timer;
+
     // Start is called before the first frame update
     void Awake()
     {
@@ -110,6 +112,7 @@ public class KeyboardManager : MonoBehaviour
 
                 if (allComplete)
                 {
+                    timer = Time.time;
                     SetState(KeyboardState.BROKEN);
                 }
 
@@ -150,18 +153,23 @@ public class KeyboardManager : MonoBehaviour
 
                         //see if dragging object is close to slot
                         KeySocket key = null;
+                        KeySocket placedOn = null;
                         Transform socket = null;
 
                         for (int i = 0; i < keys.Length; i++)
                         {
-                            Vector3 transformed = keys[i].keySocket.InverseTransformPoint(draggingObject.position);
-                            //Debug.Log(transformed + " " + keys[i].key);
-
-                            float offset = Mathf.Abs(transformed.x) + Mathf.Abs(transformed.z);
-                            if (offset < keySnapPos)
+                            if (explodingKeys.Contains(keys[i]))
                             {
-                                socket = keys[i].keySocket;
-                                draggingObject.transform.position = keys[i].keySocket.position;
+                                Vector3 transformed = keys[i].keySocket.InverseTransformPoint(draggingObject.position);
+                                //Debug.Log(transformed + " " + keys[i].key);
+
+                                float offset = Mathf.Abs(transformed.x) + Mathf.Abs(transformed.z);
+                                if (offset < keySnapPos)
+                                {
+                                    socket = keys[i].keySocket;
+                                    placedOn = keys[i];
+                                    draggingObject.transform.position = keys[i].keySocket.position;
+                                }
                             }
 
                             if (keys[i].keyObject == draggingObject)
@@ -172,8 +180,6 @@ public class KeyboardManager : MonoBehaviour
 
                         if (key != null)
                         {
-                            Debug.Log("Set in: " + key.key);
-
                             int explodeIndex = explodingKeys.IndexOf(key);
                             if (explodeIndex >= 0)
                             {
@@ -182,7 +188,7 @@ public class KeyboardManager : MonoBehaviour
 
                             if (socket != null)
                             {
-                                explodingKeys.Remove(key);
+                                explodingKeys.Remove(placedOn);
                                 key.keyObject.transform.position = socket.position;
                                 key.keyObject.transform.eulerAngles = new Vector3(-90, 0, 0);
 
@@ -194,6 +200,7 @@ public class KeyboardManager : MonoBehaviour
                                 if (explodingKeys.Count == 0)
                                 {
                                     Debug.Log("Correct: " + (correctPlacements / (float)brokenKeys * 100) + "%");
+                                    GameStateManager.instance.KeyboardStats((correctPlacements / (float)brokenKeys * 100), Time.time - timer);
                                     GameStateManager.instance.SetGameState(GameState.TOWER);
                                     SetState(KeyboardState.FIXED);
                                 }

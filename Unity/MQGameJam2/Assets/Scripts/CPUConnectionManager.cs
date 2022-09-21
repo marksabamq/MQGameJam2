@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class CPUConnectionManager : MonoBehaviour
 {
+    public static CPUConnectionManager instance; 
+
     [SerializeField] private Camera cam;
     [SerializeField] private Transform[] connectionPoints;
     [SerializeField] private LineRenderer cablePrefab;
@@ -12,6 +14,8 @@ public class CPUConnectionManager : MonoBehaviour
 
     private int currentLine;
     private int correctConnections;
+
+    private float timer;
 
     private List<LineRenderer> cables = new List<LineRenderer>();
     private Color[] colors = new Color[] {
@@ -25,9 +29,16 @@ public class CPUConnectionManager : MonoBehaviour
         new Color(0,0,0)
     };
 
+    bool activated;
+
     // Start is called before the first frame update
     void Start()
-    {
+    { 
+        if (instance == null)
+        {
+            instance = this;
+        }
+
         for (int i = 0; i < connectionPoints.Length / 2; i++)
         {
             LineRenderer lr = Instantiate(cablePrefab, transform.position, Quaternion.identity);
@@ -66,60 +77,72 @@ public class CPUConnectionManager : MonoBehaviour
 
     private Transform selectedConnection;
 
+    public void Activate()
+    {
+        timer = Time.time;
+        activated = true;
+    }
+
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (activated)
         {
-            RaycastHit hit;
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out hit))
+            if (Input.GetMouseButtonDown(0))
             {
-                if (hit.transform.gameObject.layer == 7)
+                RaycastHit hit;
+                Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out hit))
                 {
-                    Debug.Log(hit.transform.name);
-                    selectedConnection = hit.transform;
+                    if (hit.transform.gameObject.layer == 7)
+                    {
+                        Debug.Log(hit.transform.name);
+                        selectedConnection = hit.transform;
+                    }
                 }
             }
-        }
 
-        if (Input.GetMouseButtonUp(0))
-        {
-            RaycastHit hit;
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out hit))
+            if (Input.GetMouseButtonUp(0))
             {
-                if (hit.transform != null && selectedConnection != null && hit.transform.gameObject.layer == 7 && hit.transform != selectedConnection)
+                RaycastHit hit;
+                Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out hit))
                 {
-                    cables[currentLine].positionCount = 2;
-                    cables[currentLine].SetPositions(new Vector3[] { selectedConnection.position, hit.transform.position });
-                    cables[currentLine].startColor = selectedConnection.GetComponent<MeshRenderer>().material.color;
-                    cables[currentLine].endColor = hit.transform.GetComponent<MeshRenderer>().material.color;
-
-                    Transform[] connIndex = GetConnectionFromPoint(hit.transform);
-
-                    if (hit.transform == connIndex[0] || hit.transform == connIndex[1])
+                    if (hit.transform != null && selectedConnection != null && hit.transform.gameObject.layer == 7 && hit.transform != selectedConnection)
                     {
-                        if (selectedConnection == connIndex[0] || selectedConnection == connIndex[1])
+                        cables[currentLine].positionCount = 2;
+                        cables[currentLine].SetPositions(new Vector3[] { selectedConnection.position, hit.transform.position });
+                        cables[currentLine].startColor = selectedConnection.GetComponent<MeshRenderer>().material.color;
+                        cables[currentLine].endColor = hit.transform.GetComponent<MeshRenderer>().material.color;
+
+                        Transform[] connIndex = GetConnectionFromPoint(hit.transform);
+
+                        if (hit.transform == connIndex[0] || hit.transform == connIndex[1])
                         {
-                            correctConnections++;
+                            if (selectedConnection == connIndex[0] || selectedConnection == connIndex[1])
+                            {
+                                correctConnections++;
+                            }
                         }
-                    }
 
-                    currentLine++;
+                        currentLine++;
 
-                    if (currentLine >= cables.Count)
-                    {
-                        Debug.Log("Completed cables: " + (correctConnections / (float)connectedPoints.Count * 100) + "%");
-                        GameStateManager.instance.SetGameState(GameState.MONITOR);
+                        if (currentLine >= cables.Count)
+                        {
+                            Debug.Log("Completed cables: " + (correctConnections / (float)connectedPoints.Count * 100) + "%");
+
+                            GameStateManager.instance.TowerStats((correctConnections / (float)connectedPoints.Count * 100), Time.time - timer);
+                            GameStateManager.instance.SetGameState(GameState.MONITOR);
+                            activated = false;
+                        }
+                        selectedConnection = null;
                     }
-                    selectedConnection = null;
                 }
             }
         }
     }
 
-    Transform[] GetConnectionFromPoint(Transform connection)
+        Transform[] GetConnectionFromPoint(Transform connection)
     {
         for (int i = 0; i < connectedPoints.Count; i++)
         {
