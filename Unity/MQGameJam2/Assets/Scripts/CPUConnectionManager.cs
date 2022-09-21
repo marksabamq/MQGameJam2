@@ -89,7 +89,7 @@ public class CPUConnectionManager : MonoBehaviour
             Ray ray = cam.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out hit))
             {
-                if (hit.transform.gameObject.layer == 7 && hit.transform != selectedConnection)
+                if (hit.transform != null && selectedConnection != null && hit.transform.gameObject.layer == 7 && hit.transform != selectedConnection)
                 {
                     cables[currentLine].positionCount = 2;
                     cables[currentLine].SetPositions(new Vector3[] { selectedConnection.position, hit.transform.position });

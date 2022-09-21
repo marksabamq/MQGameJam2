@@ -19,6 +19,7 @@ public class GameStateManager : MonoBehaviour
 
     [SerializeField] private float cameraMoveSpeed = 3;
     [SerializeField] private float cameraRotateSpeed = 3;
+    [SerializeField] private float transitionDelay = 1;
     [SerializeField] private GameStateCamera[] cameraStates;
 
     private GameState gameState;
@@ -26,13 +27,15 @@ public class GameStateManager : MonoBehaviour
 
     private GameState settingState;
 
+    private float transitionTime = 0f;
+
     private void Start()
     {
         if (instance == null)
         {
             instance = this;
         }
-        SetGameState(GameState.TOWER);
+        SetGameState(GameState.KEYBOARD);
     }
 
     // Update is called once per frame
@@ -40,12 +43,15 @@ public class GameStateManager : MonoBehaviour
     {
         if (gameState == GameState.TRANSITIONING)
         {
-            cam.transform.position = Vector3.MoveTowards(cam.transform.position, currentCameraState.cameraPosition, cameraMoveSpeed);
-            if (Vector3.Distance(cam.transform.position, currentCameraState.cameraPosition) < 0.1f)
+            if (Time.time - transitionTime >= transitionDelay)
             {
-                TransitionComplete();
+                cam.transform.position = Vector3.MoveTowards(cam.transform.position, currentCameraState.cameraPosition, cameraMoveSpeed);
+                if (Vector3.Distance(cam.transform.position, currentCameraState.cameraPosition) < 0.1f)
+                {
+                    TransitionComplete();
+                }
+                cam.transform.rotation = Quaternion.RotateTowards(cam.transform.rotation, Quaternion.Euler(currentCameraState.cameraRotation), cameraRotateSpeed);
             }
-            cam.transform.rotation = Quaternion.RotateTowards(cam.transform.rotation, Quaternion.Euler(currentCameraState.cameraRotation), cameraRotateSpeed);
         }
     }
 
@@ -61,6 +67,9 @@ public class GameStateManager : MonoBehaviour
             case GameState.KEYBOARD:
                 KeyboardManager.instance.SetState(KeyboardState.EXPLODE);
                 break;
+            case GameState.MONITOR:
+                QTEManager.instance.SetState(QTEState.GENERATING);
+                break;
         }
     }
 
@@ -69,6 +78,8 @@ public class GameStateManager : MonoBehaviour
         //gameState = newState;
         gameState = GameState.TRANSITIONING;
         settingState = newState;
+
+        transitionTime = Time.time;
 
         for (int i = 0; i < cameraStates.Length; i++)
         {
