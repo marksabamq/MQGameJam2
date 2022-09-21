@@ -194,6 +194,7 @@ public class KeyboardManager : MonoBehaviour
                                 if (explodingKeys.Count == 0)
                                 {
                                     Debug.Log("Correct: " + (correctPlacements / (float)brokenKeys * 100) + "%");
+                                    GameStateManager.instance.SetGameState(GameState.TOWER);
                                     SetState(KeyboardState.FIXED);
                                 }
                             }
