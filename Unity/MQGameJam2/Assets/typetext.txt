@@ -1,4 +1,7 @@
 password123
 verysecure
 mypassword
-gamejamin
+gamejam
+typeletters
+noglitches
+playmygames

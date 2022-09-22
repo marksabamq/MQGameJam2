@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CPUConnectionManager : MonoBehaviour
 {
-    public static CPUConnectionManager instance; 
+    public static CPUConnectionManager instance;
 
     [SerializeField] private Camera cam;
     [SerializeField] private Transform[] connectionPoints;
@@ -33,7 +33,7 @@ public class CPUConnectionManager : MonoBehaviour
 
     // Start is called before the first frame update
     void Start()
-    { 
+    {
         if (instance == null)
         {
             instance = this;
@@ -47,32 +47,7 @@ public class CPUConnectionManager : MonoBehaviour
             cables.Add(lr);
         }
 
-        List<Transform> remainingConnections = new List<Transform>();
-        remainingConnections.AddRange(connectionPoints);
-
-        int currLR = 0;
-        while (remainingConnections.Count > 0)
-        {
-            int rndIndex1 = Random.Range(0, remainingConnections.Count);
-            int rndIndex2 = rndIndex1;
-            while (rndIndex2 == rndIndex1)
-            {
-                rndIndex2 = Random.Range(0, remainingConnections.Count);
-            }
-
-            remainingConnections[rndIndex1].GetComponent<MeshRenderer>().material.color = colors[currLR];
-            remainingConnections[rndIndex2].GetComponent<MeshRenderer>().material.color = colors[currLR];
-
-            Transform p1 = remainingConnections[rndIndex1];
-            Transform p2 = remainingConnections[rndIndex2];
-
-            connectedPoints.Add(new Transform[] { p1, p2 });
-            currLR++;
-            Debug.Log(currLR);
-
-            remainingConnections.Remove(p1);
-            remainingConnections.Remove(p2);
-        }
+        CreateConnections();
     }
 
     private Transform selectedConnection;
@@ -142,7 +117,7 @@ public class CPUConnectionManager : MonoBehaviour
         }
     }
 
-        Transform[] GetConnectionFromPoint(Transform connection)
+    Transform[] GetConnectionFromPoint(Transform connection)
     {
         for (int i = 0; i < connectedPoints.Count; i++)
         {
@@ -155,5 +130,48 @@ public class CPUConnectionManager : MonoBehaviour
             }
         }
         return null;
+    }
+
+    public void ResetConnections()
+    {
+        for(int i =0; i < cables.Count; i++)
+        {
+            cables[i].positionCount = 0;
+        }
+
+        currentLine = 0;
+        correctConnections = 0;
+        connectedPoints.Clear();
+
+        CreateConnections();
+    }
+
+    void CreateConnections()
+    {
+        List<Transform> remainingConnections = new List<Transform>();
+        remainingConnections.AddRange(connectionPoints);
+
+        int currLR = 0;
+        while (remainingConnections.Count > 0)
+        {
+            int rndIndex1 = Random.Range(0, remainingConnections.Count);
+            int rndIndex2 = rndIndex1;
+            while (rndIndex2 == rndIndex1)
+            {
+                rndIndex2 = Random.Range(0, remainingConnections.Count);
+            }
+
+            remainingConnections[rndIndex1].GetComponent<MeshRenderer>().material.color = colors[currLR];
+            remainingConnections[rndIndex2].GetComponent<MeshRenderer>().material.color = colors[currLR];
+
+            Transform p1 = remainingConnections[rndIndex1];
+            Transform p2 = remainingConnections[rndIndex2];
+
+            connectedPoints.Add(new Transform[] { p1, p2 });
+            currLR++;
+
+            remainingConnections.Remove(p1);
+            remainingConnections.Remove(p2);
+        }
     }
 }

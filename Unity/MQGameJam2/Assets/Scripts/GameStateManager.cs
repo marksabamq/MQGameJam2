@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using UnityEngine.Events;
 
 public enum GameState { NONE, TRANSITIONING, CUTSCENE, KEYBOARD, TOWER, MONITOR, GAMEOVER };
 [System.Serializable]
@@ -12,6 +13,8 @@ public struct GameStateCamera
     public GameState state;
     public Vector3 cameraPosition;
     public Vector3 cameraRotation;
+
+    public UnityEvent transitionEvent;
 }
 
 public class GameStateManager : MonoBehaviour
@@ -27,6 +30,8 @@ public class GameStateManager : MonoBehaviour
     [SerializeField] private float cameraRotateSpeed = 3;
     [SerializeField] private float transitionDelay = 1;
     [SerializeField] private GameStateCamera[] cameraStates;
+
+    public UnityEvent resetEvent;
 
     private GameState gameState;
     private GameStateCamera currentCameraState;
@@ -51,7 +56,7 @@ public class GameStateManager : MonoBehaviour
             instance = this;
         }
         objectiveText.text = "RIP COMPUTER ;(";
-        SetGameState(GameState.KEYBOARD);
+        SetGameState(GameState.CUTSCENE);
     }
 
     // Update is called once per frame
@@ -77,10 +82,13 @@ public class GameStateManager : MonoBehaviour
         }
     }
 
-    void TransitionComplete()
+    void TransitionComplete(bool setTransform = true)
     {
-        cam.transform.position = currentCameraState.cameraPosition;
-        cam.transform.rotation = Quaternion.Euler(currentCameraState.cameraRotation);
+        if (setTransform)
+        {
+            cam.transform.position = currentCameraState.cameraPosition;
+            cam.transform.rotation = Quaternion.Euler(currentCameraState.cameraRotation);
+        }
 
         gameState = settingState;
 
@@ -91,7 +99,7 @@ public class GameStateManager : MonoBehaviour
                 break; 
             case GameState.KEYBOARD:
                 objectiveText.text = "REPAIR YOUR KEYBOARD";
-                KeyboardManager.instance.SetState(KeyboardState.EXPLODE);
+                KeyboardManager.instance.SetState(KeyboardState.BROKEN);
                 break;
 
             case GameState.TOWER:
@@ -108,18 +116,26 @@ public class GameStateManager : MonoBehaviour
     public void SetGameState(GameState newState)
     {
         //gameState = newState;
-        objectiveText.text = "COMPLETE";
+        objectiveText.text = gameState != GameState.CUTSCENE ? "COMPLETE" : "";
         gameState = GameState.TRANSITIONING;
         settingState = newState;
 
         transitionTime = Time.time;
 
+        bool found = false;
         for (int i = 0; i < cameraStates.Length; i++)
         {
             if (cameraStates[i].state == newState)
             {
+                found = true;
                 currentCameraState = cameraStates[i];
+                currentCameraState.transitionEvent.Invoke();
             }
+        }
+
+        if (!found)
+        {
+            TransitionComplete(false);
         }
     }
 
@@ -138,5 +154,20 @@ public class GameStateManager : MonoBehaviour
     {
         monitorAcc = acc;
         monitorTime = time;
+    }
+
+    public void StartGame()
+    {
+        SetGameState(GameState.KEYBOARD);
+    }
+
+    public void ResetGame()
+    {
+        resetEvent.Invoke();
+        SetGameState(GameState.CUTSCENE);
+
+        KeyboardManager.instance.ResetKeyboard();
+        CPUConnectionManager.instance.ResetConnections();
+        QTEManager.instance.QTEReset();
     }
 }

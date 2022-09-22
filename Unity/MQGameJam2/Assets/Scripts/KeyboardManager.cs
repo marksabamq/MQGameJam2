@@ -25,8 +25,6 @@ public class KeyboardManager : MonoBehaviour
 
     [SerializeField] private float explodeSpeed = 2;
 
-    [SerializeField] private bool explode = false;
-
     [SerializeField] private float keySnapPos = 0.25f;
 
     private List<KeySocket> explodingKeys = new List<KeySocket>();
@@ -86,7 +84,6 @@ public class KeyboardManager : MonoBehaviour
 
                 brokenKeys = explodingKeys.Count;
                 keyboardState = KeyboardState.EXPLODING;
-
                 break;
 
             case KeyboardState.EXPLODING:
@@ -94,7 +91,7 @@ public class KeyboardManager : MonoBehaviour
                 for (int i = 0; i < explodingKeys.Count; i++)
                 {
                     explodingKeys[i].keyObject.position = Vector3.Lerp(explodingKeys[i].keySocket.position, explodePositions[i].position, tVals[i]);
-                    explodingKeys[i].keyObject.rotation = Quaternion.Euler(tVals[i] * 270, (1 - tVals[i]) * 360, (tVals[i]) * Random.Range(-90, 90));
+                    explodingKeys[i].keyObject.rotation = Quaternion.Euler(tVals[i] * 270, (1 - tVals[i]) * 360, (tVals[i]) * Random.Range(-45, 45));
 
                     if (tVals[i] < 1)
                     {
@@ -112,7 +109,6 @@ public class KeyboardManager : MonoBehaviour
 
                 if (allComplete)
                 {
-                    timer = Time.time;
                     SetState(KeyboardState.BROKEN);
                 }
 
@@ -214,8 +210,39 @@ public class KeyboardManager : MonoBehaviour
         }
     }
 
+    public void ResetKeyboard()
+    {
+        SetState(KeyboardState.NONE);
+
+        explodingKeys.Clear();
+        explodePositions.Clear();
+        tVals.Clear();
+
+        correctPlacements = 0;
+        brokenKeys = 0;
+        draggingObject = null;
+
+        for (int i = 0; i < keys.Length; i++)
+        {
+            keys[i].keyObject.transform.position = keys[i].keySocket.position;
+            keys[i].keyObject.transform.eulerAngles = new Vector3(-90, 0, 0);
+        }
+    }
+
     public void SetState(KeyboardState newState)
     {
         keyboardState = newState;
+
+        switch(keyboardState)
+        {
+            case KeyboardState.BROKEN:
+                timer = Time.time;
+                break;
+        }
+    }
+
+    public void Explode()
+    {
+        SetState(KeyboardState.EXPLODE);
     }
 }
